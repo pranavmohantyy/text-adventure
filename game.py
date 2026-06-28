@@ -5,6 +5,8 @@ class Room:
         self.connections = {}
         self.items = []
         self.npcs = []
+        self.locked = False
+        self.lock_item = None
 
     def connect(self, direction, room):
         self.connections[direction] = room
@@ -21,27 +23,43 @@ class Room:
     def add_npc(self, npc):
         self.npcs.append(npc)
 
+    def lock(self, item):
+        self.locked = True
+        self.lock_item = item
+
+    def unlock(self, item):
+        if item == self.lock_item:
+            self.locked = False
+            self.lock_item = None
+
+    def is_locked(self):
+        return self.locked
+
 class Player:
     def __init__(self, start_room):
         self.current_room = start_room
         self.inventory = []
-        self.health = 100
 
     def move(self, direction):
-        new_room = self.current_room.get_room(direction)
-        if new_room:
-            self.current_room = new_room
+        next_room = self.current_room.get_room(direction)
+        if next_room:
+            if next_room.is_locked():
+                print("The door is locked.")
+                return
+            self.current_room = next_room
+        else:
+            print("You can't go that way.")
 
-    def attack(self, npc):
-        if npc in self.current_room.npcs:
-            npc.health -= 10
-            if npc.health <= 0:
-                self.current_room.npcs.remove(npc)
+    def pick_up(self, item):
+        self.current_room.remove_item(item)
+        self.inventory.append(item)
 
-class NPC:
-    def __init__(self, name, health):
-        self.name = name
-        self.health = health
-
-    def attack(self, player):
-        player.health -= 10
+    def use_item(self, item):
+        if item in self.inventory:
+            if self.current_room.is_locked() and item == self.current_room.lock_item:
+                self.current_room.unlock(item)
+                print("You unlocked the door!")
+            else:
+                print("You can't use that here.")
+        else:
+            print("You don't have that item.")
