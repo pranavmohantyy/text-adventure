@@ -1,3 +1,5 @@
+import json
+
 class Room:
     def __init__(self, name, description):
         self.name = name
@@ -23,43 +25,32 @@ class Room:
     def add_npc(self, npc):
         self.npcs.append(npc)
 
-    def lock(self, item):
-        self.locked = True
-        self.lock_item = item
+    def to_dict(self):
+        return {
+            'name': self.name,
+            'description': self.description,
+            'connections': {direction: room.name for direction, room in self.connections.items()},
+            'items': self.items,
+            'npcs': [npc.name for npc in self.npcs],
+            'locked': self.locked,
+            'lock_item': self.lock_item
+        }
 
-    def unlock(self, item):
-        if item == self.lock_item:
-            self.locked = False
-            self.lock_item = None
+    @classmethod
+    def from_dict(cls, data):
+        room = cls(data['name'], data['description'])
+        room.connections = {direction: None for direction in data['connections'].keys()}
+        room.items = data['items']
+        room.npcs = []  # assuming NPCs need to be added later
+        room.locked = data['locked']
+        room.lock_item = data['lock_item']
+        return room
 
-    def is_locked(self):
-        return self.locked
+def save_game_state(rooms, filename):
+    with open(filename, 'w') as f:
+        json.dump({room.name: room.to_dict() for room in rooms}, f)
 
-class Player:
-    def __init__(self, start_room):
-        self.current_room = start_room
-        self.inventory = []
-
-    def move(self, direction):
-        next_room = self.current_room.get_room(direction)
-        if next_room:
-            if next_room.is_locked():
-                print("The door is locked.")
-                return
-            self.current_room = next_room
-        else:
-            print("You can't go that way.")
-
-    def pick_up(self, item):
-        self.current_room.remove_item(item)
-        self.inventory.append(item)
-
-    def use_item(self, item):
-        if item in self.inventory:
-            if self.current_room.is_locked() and item == self.current_room.lock_item:
-                self.current_room.unlock(item)
-                print("You unlocked the door!")
-            else:
-                print("You can't use that here.")
-        else:
-            print("You don't have that item.")
+def load_game_state(filename):
+    with open(filename, 'r') as f:
+        data = json.load(f)
+        return {name: Room.from_dict(room_data) for name, room_data in data.items()}
