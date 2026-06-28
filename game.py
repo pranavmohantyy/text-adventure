@@ -23,31 +23,17 @@ class Player:
         self.inventory = []
 
     def move(self, direction):
-        new_room = self.current_room.get_room(direction)
-        if new_room:
-            self.current_room = new_room
-        else:
-            print("You can't go that way.")
+        next_room = self.current_room.get_room(direction)
+        if next_room:
+            self.current_room = next_room
 
-    def take_item(self, item_name):
-        for item in self.current_room.items:
-            if item.name == item_name:
-                self.inventory.append(item)
-                self.current_room.remove_item(item)
-                print(f"You took {item_name}.")
-                return
-        print("Item not found.")
-
-    def drop_item(self, item_name):
-        for item in self.inventory:
-            if item.name == item_name:
-                self.current_room.add_item(item)
-                self.inventory.remove(item)
-                print(f"You dropped {item_name}.")
-                return
-        print("You don't have that item.")
-
-class Item:
-    def __init__(self, name, description):
+class NPC:
+    def __init__(self, name, dialogues):
         self.name = name
-        self.description = description
+        self.dialogues = dialogues
+        self.dialogue_index = 0
+
+    def talk(self):
+        line = self.dialogues[self.dialogue_index]
+        self.dialogue_index = (self.dialogue_index + 1) % len(self.dialogues)
+        return line
